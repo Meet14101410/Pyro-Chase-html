@@ -1,0 +1,9 @@
+```css
+/* Pyro Chase — short CSS */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#09060a;color:#fff;display:flex;align-items:center;justify-content:center}
+#game{width:800px;height:360px;border-radius:12px;background:linear-gradient(180deg,#2a0b00,#0f0300);box-shadow:0 12px 40px rgba(0,0,0,.6);display:block}
+.hud{position:fixed;left:18px;top:18px;font-weight:700;letter-spacing:.6px}
+.hint{position:fixed;left:18px;bottom:18px;font-size:13px;opacity:.85}
+canvas{display:block;border-radius:12px}
+```
