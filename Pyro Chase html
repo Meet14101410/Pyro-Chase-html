@@ -1,0 +1,70 @@
+```html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pyro Chase</title>
+<style>
+  *{box-sizing:border-box}html,body{height:100%;margin:0;background:#09060a;font-family:system-ui,-apple-system,Segoe UI,Roboto;color:#fff}
+  #game{display:block;margin:36px auto;border-radius:12px;background:linear-gradient(180deg,#2a0b00,#0f0300);box-shadow:0 12px 40px rgba(0,0,0,.6)}
+  .hud{position:fixed;left:18px;top:18px;font-weight:700}
+  .hint{position:fixed;left:18px;bottom:18px;font-size:13px;opacity:.8}
+</style>
+</head>
+<body>
+<canvas id="game" width="800" height="360"></canvas>
+<div class="hud" id="score">Score: 0</div>
+<div class="hint">Space / Click to jump • R to restart</div>
+<script>
+(() => {
+  const c = document.getElementById('game'), ctx = c.getContext('2d');
+  const W=c.width,H=c.height, groundY=H-64;
+  let player={x:80,y:groundY-48,w:40,h:48,vy:0,j:false}, g=0.9, speed=4, obs=[], frame=0, score=0, over=false;
+  function spawn(){ let h=20+Math.random()*50; obs.push({x:W+20,w:20+Math.random()*30,h,y:groundY-h}); }
+  function reset(){ obs=[];frame=0;score=0;speed=4;player.y=groundY-48;player.vy=0;player.j=false;over=false; document.getElementById('score').textContent='Score: 0'; }
+  function upd(){
+    if(over) return;
+    frame++;
+    if(frame%Math.max(70-Math.floor(score/6),36)===0) spawn();
+    if(frame%300===0) speed+=0.4;
+    player.vy+=g; player.y+=player.vy;
+    if(player.y>groundY-player.h){ player.y=groundY-player.h; player.vy=0; player.j=false; }
+    for(let i=obs.length-1;i>=0;i--){
+      let o=obs[i]; o.x-=speed;
+      if(player.x < o.x+o.w && player.x+player.w > o.x && player.y < o.y+o.h && player.y+player.h > o.y){ over=true; }
+      if(o.x+o.w<0){ obs.splice(i,1); score++; document.getElementById('score').textContent='Score: '+score; }
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // sky gradient
+    let g1=ctx.createLinearGradient(0,0,0,H); g1.addColorStop(0,'#2d0b00'); g1.addColorStop(1,'#0b0200'); ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
+    // lava strip
+    ctx.fillStyle='#ff5b1a'; ctx.fillRect(0,groundY+player.h-12,W,12);
+    // player (pyro orb)
+    let rg=ctx.createRadialGradient(player.x+player.w/2,player.y+player.h/2,6,player.x+player.w/2,player.y+player.h/2,50);
+    rg.addColorStop(0,'#fff59d'); rg.addColorStop(0.3,'#ff8c00'); rg.addColorStop(1,'rgba(255,72,0,0)');
+    ctx.fillStyle=rg; ctx.fillRect(player.x-6,player.y-6,player.w+12,player.h+12);
+    ctx.fillStyle='#ff9500'; ctx.fillRect(player.x,player.y,player.w,player.h);
+    // obstacles
+    for(const o of obs){
+      ctx.fillStyle='#351817'; ctx.fillRect(o.x,o.y,o.w,o.h);
+      ctx.fillStyle='#ff3f00'; ctx.fillRect(o.x+3,o.y+3,o.w-6,Math.max(4,o.h-6));
+    }
+    if(over){
+      ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='36px sans-serif'; ctx.fillText('Game Over',W/2,H/2-12);
+      ctx.font='16px sans-serif'; ctx.fillText('Press R or Click to restart',W/2,H/2+24);
+    }
+  }
+  function loop(){ upd(); draw(); requestAnimationFrame(loop); }
+  function jump(){ if(over){ reset(); } else if(!player.j){ player.vy=-14; player.j=true; } }
+  window.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); jump(); } if(e.key.toLowerCase()==='r'){ reset(); }});
+  c.addEventListener('click', jump);
+  draw(); loop();
+})();
+</script>
+</body>
+</html>
+```
