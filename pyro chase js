@@ -1,0 +1,105 @@
+```js
+// pyro-chase.js — game logic (attach after DOM or use defer)
+(() => {
+  const c = document.getElementById('game');
+  if(!c) throw new Error('Canvas #game not found');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height, groundY = H - 64;
+  const hud = document.getElementById('score');
+
+  let player = { x: 80, y: groundY - 48, w: 40, h: 48, vy: 0, jumping: false };
+  let g = 0.9, speed = 4, obstacles = [], frame = 0, score = 0, gameOver = false;
+
+  function spawn() {
+    const h = 20 + Math.random() * 50;
+    obstacles.push({ x: W + 20, w: 20 + Math.random() * 30, h, y: groundY - h });
+  }
+
+  function reset() {
+    obstacles = []; frame = 0; score = 0; speed = 4; gameOver = false;
+    player.y = groundY - player.h; player.vy = 0; player.jumping = false;
+    if (hud) hud.textContent = 'Score: 0';
+  }
+
+  function update() {
+    if (gameOver) return;
+    frame++;
+    if (frame % Math.max(70 - Math.floor(score / 6), 36) === 0) spawn();
+    if (frame % 300 === 0) speed += 0.4;
+
+    // physics
+    player.vy += g;
+    player.y += player.vy;
+    if (player.y > groundY - player.h) { player.y = groundY - player.h; player.vy = 0; player.jumping = false; }
+
+    // obstacles
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const o = obstacles[i];
+      o.x -= speed;
+      // collision
+      if (player.x < o.x + o.w && player.x + player.w > o.x &&
+          player.y < o.y + o.h && player.y + player.h > o.y) {
+        gameOver = true;
+      }
+      if (o.x + o.w < 0) {
+        obstacles.splice(i, 1);
+        score++;
+        if (hud) hud.textContent = 'Score: ' + score;
+      }
+    }
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    // background
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#2d0b00'); sky.addColorStop(1, '#0b0200');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+
+    // lava strip
+    ctx.fillStyle = '#ff5b1a'; ctx.fillRect(0, groundY + player.h - 12, W, 12);
+
+    // player glow + body
+    const rg = ctx.createRadialGradient(player.x + player.w/2, player.y + player.h/2, 6,
+                                       player.x + player.w/2, player.y + player.h/2, 50);
+    rg.addColorStop(0, '#fff59d'); rg.addColorStop(0.3, '#ff8c00'); rg.addColorStop(1, 'rgba(255,72,0,0)');
+    ctx.fillStyle = rg; ctx.fillRect(player.x - 6, player.y - 6, player.w + 12, player.h + 12);
+    ctx.fillStyle = '#ff9500'; ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    // obstacles
+    for (const o of obstacles) {
+      ctx.fillStyle = '#351817'; ctx.fillRect(o.x, o.y, o.w, o.h);
+      ctx.fillStyle = '#ff3f00'; ctx.fillRect(o.x + 3, o.y + 3, o.w - 6, Math.max(4, o.h - 6));
+    }
+
+    if (gameOver) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.font = '36px sans-serif'; ctx.fillText('Game Over', W/2, H/2 - 12);
+      ctx.font = '16px sans-serif'; ctx.fillText('Press R or Click to restart', W/2, H/2 + 24);
+    }
+  }
+
+  function loop() { update(); render(); requestAnimationFrame(loop); }
+
+  function jump() {
+    if (gameOver) { reset(); return; }
+    if (!player.jumping) { player.vy = -14; player.jumping = true; }
+  }
+
+  // Controls
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); jump(); }
+    if (e.key && e.key.toLowerCase() === 'r') { reset(); }
+  });
+  c.addEventListener('click', jump);
+
+  // initialize and start
+  reset();
+  render();
+  loop();
+
+  // expose for debugging if desired
+  window._pyro = { reset, spawn, getState: () => ({score, frame, gameOver}) };
+})();
+```
